@@ -15,6 +15,7 @@ struct instruction
 struct registers
 {
 	uint8_t A;
+	uint8_t F;
 	uint16_t SP;
 	uint16_t PC;
 	uint16_t HL;
@@ -53,3 +54,4 @@ void cpu_ld_sp_d16(processor &cpu);
 void cpu_xor_a(processor &cpu);
 void cpu_ld_hl_d16(processor &cpu);
 void cpu_ld_hldec_a(processor &cpu);
+void cpu_prefix_cb(processor &cpu);

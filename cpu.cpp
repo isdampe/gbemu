@@ -9,6 +9,7 @@ processor cpu_create(string rom_fp)
 
 	//Setup registers.
 	cpu.r.A = 0x0;
+	cpu.r.F = 0x0;
 	cpu.r.SP = 0x0;
 	cpu.r.PC = 0x0;
 	cpu.r.HL = 0x0;
@@ -63,6 +64,10 @@ instruction cpu_execute_inst(processor &cpu, const uint8_t &i)
 		case 0x21:
 			inst.disassembly = "LD HL,d16";
 			cpu_ld_hl_d16(cpu);
+			break;
+		case 0xCB:
+			inst.disassembly = "PREFIX CB";
+			cpu_prefix_cb(cpu);
 			break;
 		default:
 			inst.disassembly = "UNKNOWN";
@@ -122,7 +127,7 @@ void cpu_ld_hl_d16(processor &cpu)
 	b2 = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x2);
 
 	uint16_t res;
-	res = b2 | (b1 << 8);
+	res = b1 | (b2 << 8);
 
 	//Set HL register.
 	cpu.r.HL = res;
@@ -138,4 +143,29 @@ void cpu_ld_hldec_a(processor &cpu)
 	mmu_absolute_write(cpu.mmu, cpu.r.HL, cpu.r.A);
 	cpu.r.HL--;
 	cpu.r.PC += 0x1;
+}
+
+void cpu_prefix_cb(processor &cpu)
+{
+	uint8_t cb = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
+	uint8_t hb, msb;
+	switch(cb)
+	{
+		case 0x7C:
+			//Check most significant bit.
+			hb = cpu.r.HL >> 8;
+			msb = 1 << (8 -1);
+			if (hb & msb)
+				cpu.r.F = 0x0; //Set F register cleared.
+			else
+				cpu.r.F = 0x1; //Set F register active.
+		break;
+		default:
+			cerr << "Hit unknown Prefix CB in cpu_prefix_cb, " << hex << cb << "\n";
+			cpu_dump(cpu);
+			exit(1);
+		break;
+	}
+
+	cpu.r.PC += 0x2;
 }
