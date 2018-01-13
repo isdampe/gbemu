@@ -55,3 +55,4 @@ void cpu_xor_a(processor &cpu);
 void cpu_ld_hl_d16(processor &cpu);
 void cpu_ld_hldec_a(processor &cpu);
 void cpu_prefix_cb(processor &cpu);
+void cpu_jpnz_r8(processor &cpu);

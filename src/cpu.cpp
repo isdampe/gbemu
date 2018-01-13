@@ -69,6 +69,11 @@ instruction cpu_execute_inst(processor &cpu, const uint8_t &i)
 			inst.disassembly = "PREFIX CB";
 			cpu_prefix_cb(cpu);
 			break;
+		case 0x20:
+			inst.disassembly = "JPNZ,r8";
+			cpu_jpnz_r8(cpu);
+			break;
+		break;
 		default:
 			inst.disassembly = "UNKNOWN";
 			cout << "Hit unknown opcode 0x" << hex << (int)i;
@@ -156,9 +161,9 @@ void cpu_prefix_cb(processor &cpu)
 			hb = cpu.r.HL >> 8;
 			msb = 1 << (8 -1);
 			if (hb & msb)
-				cpu.r.F = 0x0; //Set F register cleared.
+				cpu.r.F = 0x1; //Set F register cleared.
 			else
-				cpu.r.F = 0x1; //Set F register active.
+				cpu.r.F = 0x0; //Set F register active.
 		break;
 		default:
 			cerr << "Hit unknown Prefix CB in cpu_prefix_cb, " << hex << cb << "\n";
@@ -168,4 +173,13 @@ void cpu_prefix_cb(processor &cpu)
 	}
 
 	cpu.r.PC += 0x2;
+}
+
+void cpu_jpnz_r8(processor &cpu)
+{
+	int8_t ra = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
+	if (cpu.r.F == 0x1)
+		cpu.r.PC = (cpu.r.PC + 0x2) + ra;
+	else
+		cpu.r.PC += 0x2;
 }
