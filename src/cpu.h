@@ -17,6 +17,7 @@ struct registers
 	uint8_t A;
 	uint8_t C;
 	uint8_t F;
+	uint16_t DE;
 	uint16_t SP;
 	uint16_t PC;
 	uint16_t HL;
@@ -62,3 +63,6 @@ void cpu_ld_a_d8(processor &cpu);
 void cpu_ld_c_a(processor &cpu);
 void cpu_inc_c(processor &cpu);
 void cpu_ld_hl_a(processor &cpu);
+void cpu_ldh_a8_a(processor &cpu);
+void cpu_ld_de_d16(processor &cpu);
+void cpu_ld_a_de(processor &cpu);
