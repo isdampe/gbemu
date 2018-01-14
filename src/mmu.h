@@ -11,3 +11,4 @@ struct memory
 memory mmu_create();
 void mmu_absolute_write(memory &mmu, const uint16_t addr, const uint8_t value);
 uint8_t mmu_absolute_read(memory &mmu, const uint16_t addr);
+uint16_t mmu_absolute_read_u16(memory &mmu, const uint16_t addr);

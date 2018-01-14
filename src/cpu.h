@@ -51,6 +51,7 @@ processor cpu_create(string rom_fp);
 void cpu_main(processor &cpu);
 instruction cpu_execute_inst(processor &cpu, const uint8_t &i);
 void cpu_dump(const processor &cpu);
+void cpu_stack_push(processor &cpu, const uint16_t return_addr);
 
 void cpu_ld_sp_d16(processor &cpu);
 void cpu_xor_a(processor &cpu);
@@ -66,3 +67,4 @@ void cpu_ld_hl_a(processor &cpu);
 void cpu_ldh_a8_a(processor &cpu);
 void cpu_ld_de_d16(processor &cpu);
 void cpu_ld_a_de(processor &cpu);
+void cpu_call_nz_a16(processor &cpu);

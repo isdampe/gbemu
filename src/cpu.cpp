@@ -115,6 +115,11 @@ instruction cpu_execute_inst(processor &cpu, const uint8_t &i)
 			cpu_ld_a_de(cpu);
 			break;
 		break;
+		case 0xCD:
+			inst.disassembly = "CALL NZ,a16";
+			cpu_call_nz_a16(cpu);
+			break;
+		break;
 		default:
 			inst.disassembly = "UNKNOWN";
 			cout << "Hit unknown opcode 0x" << hex << (int)i;
@@ -142,13 +147,15 @@ void cpu_dump(const processor &cpu)
 	cout << "\n---- END CPU STACK TRACE ----\n\n";
 }
 
+void cpu_stack_push(processor &cpu, const uint16_t return_addr)
+{
+	cpu.r.SP -= 0x2;
+	mmu_absolute_write(cpu.mmu, cpu.r.SP, return_addr);
+}
+
 void cpu_ld_sp_d16(processor &cpu)
 {
-	uint8_t b1, b2;
-	b1 = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
-	b2 = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x2);
-	uint16_t res = b1 | (b2 << 8);
-
+	uint16_t res = mmu_absolute_read_u16(cpu.mmu, cpu.r.PC + 0x1);
 	cpu.r.SP = res;
 	cpu.r.PC += 0x3;
 }
@@ -162,11 +169,7 @@ void cpu_xor_a(processor &cpu)
 
 void cpu_ld_hl_d16(processor &cpu)
 {
-	uint8_t b1, b2;
-	b1 = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
-	b2 = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x2);
-	uint16_t res = b1 | (b2 << 8);
-
+	uint16_t res = mmu_absolute_read_u16(cpu.mmu, cpu.r.PC + 0x1);
 	cpu.r.HL = res;
 	cpu.r.PC += 0x3;
 }
@@ -252,10 +255,7 @@ void cpu_ldh_a8_a(processor &cpu)
 
 void cpu_ld_de_d16(processor &cpu)
 {
-	uint8_t b1, b2;
-	b1 = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
-	b2 = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x2);
-	uint16_t res = b1 | (b2 << 8);
+	uint16_t res = mmu_absolute_read_u16(cpu.mmu, cpu.r.PC + 0x1);
 	cpu.r.DE = res;
 	cpu.r.PC += 0x3;
 }
@@ -264,4 +264,11 @@ void cpu_ld_a_de(processor &cpu)
 {
 	cpu.r.A = mmu_absolute_read(cpu.mmu, cpu.r.DE);
 	cpu.r.PC += 0x1;
+}
+
+void cpu_call_nz_a16(processor &cpu)
+{
+	uint16_t res = mmu_absolute_read_u16(cpu.mmu, cpu.r.PC + 0x1);
+	cpu_stack_push(cpu, cpu.r.PC + 0x1);
+	cpu.r.PC = res;
 }
