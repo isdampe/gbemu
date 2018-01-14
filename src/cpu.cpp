@@ -89,6 +89,15 @@ instruction cpu_execute_inst(processor &cpu, const uint8_t &i)
 			inst.disassembly = "LD C,A";
 			cpu_ld_c_a(cpu);
 			break;
+		case 0xC:
+			inst.disassembly = "INC C";
+			cpu_inc_c(cpu);
+			break;
+		case 0x77:
+			inst.disassembly = "LD (HL),A";
+			cpu_ld_hl_a(cpu);
+			break;
+		break;
 		default:
 			inst.disassembly = "UNKNOWN";
 			cout << "Hit unknown opcode 0x" << hex << (int)i;
@@ -208,12 +217,25 @@ void cpu_ld_c_d8(processor &cpu)
 
 void cpu_ld_a_d8(processor &cpu)
 {
-	cpu.r.A = cpu.bios_rom[cpu.r.PC + 0x1];
+	uint8_t val = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
+	cpu.r.A = val;
 	cpu.r.PC += 0x2;
 }
 
 void cpu_ld_c_a(processor &cpu)
 {
 	mmu_absolute_write(cpu.mmu, (0xff00 + cpu.r.C), cpu.r.A);
-	cpu.r.PC += 1;
+	cpu.r.PC += 0x1;
+}
+
+void cpu_inc_c(processor &cpu)
+{
+	cpu.r.C += 0x1;
+	cpu.r.PC += 0x1;
+}
+
+void cpu_ld_hl_a(processor &cpu)
+{
+	mmu_absolute_write(cpu.mmu, cpu.r.HL, cpu.r.A);
+	cpu.r.PC += 0x1;
 }

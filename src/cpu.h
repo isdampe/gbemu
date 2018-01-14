@@ -60,3 +60,5 @@ void cpu_jpnz_r8(processor &cpu);
 void cpu_ld_c_d8(processor &cpu);
 void cpu_ld_a_d8(processor &cpu);
 void cpu_ld_c_a(processor &cpu);
+void cpu_inc_c(processor &cpu);
+void cpu_ld_hl_a(processor &cpu);
