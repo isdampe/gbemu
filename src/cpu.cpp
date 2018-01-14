@@ -11,6 +11,7 @@ processor cpu_create(string rom_fp)
 	cpu.r.A = 0x0;
 	cpu.r.C = 0x0;
 	cpu.r.F = 0x0;
+	cpu.r.DE = 0x0;
 	cpu.r.SP = 0x0;
 	cpu.r.PC = 0x0;
 	cpu.r.HL = 0x0;
@@ -47,6 +48,8 @@ instruction cpu_execute_inst(processor &cpu, const uint8_t &i)
 {
 	instruction inst;
 	inst.inst = i;
+
+	cout << "0x" << hex << (int)cpu.r.PC << ": ";
 
 	switch (i)
 	{
@@ -97,6 +100,20 @@ instruction cpu_execute_inst(processor &cpu, const uint8_t &i)
 			inst.disassembly = "LD (HL),A";
 			cpu_ld_hl_a(cpu);
 			break;
+		case 0xE0:
+			inst.disassembly = "LDH (a8),A";
+			cpu_ldh_a8_a(cpu);
+			break;
+		break;
+		case 0x11:
+			inst.disassembly = "LD DE,d16";
+			cpu_ld_de_d16(cpu);
+			break;
+		break;
+		case 0x1A:
+			inst.disassembly = "LD A,(DE)";
+			cpu_ld_a_de(cpu);
+			break;
 		break;
 		default:
 			inst.disassembly = "UNKNOWN";
@@ -117,6 +134,7 @@ void cpu_dump(const processor &cpu)
 	cout << "Register A: 0x" << hex << (int)cpu.r.A << "\n";
 	cout << "Register C: 0x" << hex << (int)cpu.r.C << "\n";
 
+	cout << "Register DE: 0x" << hex << (int)cpu.r.DE << "\n";
 	cout << "Register SP: 0x" << hex << (int)cpu.r.SP << "\n";
 	cout << "Register PC: 0x" << hex << (int)cpu.r.PC << "\n";
 	cout << "Register HL: 0x" << hex << (int)cpu.r.HL << "\n";
@@ -129,18 +147,10 @@ void cpu_ld_sp_d16(processor &cpu)
 	uint8_t b1, b2;
 	b1 = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
 	b2 = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x2);
+	uint16_t res = b1 | (b2 << 8);
 
-	uint16_t res;
-	res = b1 | (b2 << 8);
-
-	//Set stack pointer.
 	cpu.r.SP = res;
-
-	//Op size is 3
 	cpu.r.PC += 0x3;
-
-	//cout << hex << (int)res << "\n";
-
 }
 
 void cpu_xor_a(processor &cpu)
@@ -155,17 +165,10 @@ void cpu_ld_hl_d16(processor &cpu)
 	uint8_t b1, b2;
 	b1 = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
 	b2 = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x2);
+	uint16_t res = b1 | (b2 << 8);
 
-	uint16_t res;
-	res = b1 | (b2 << 8);
-
-	//Set HL register.
 	cpu.r.HL = res;
-
-	//Op size is 3
 	cpu.r.PC += 0x3;
-
-	cout << hex << (int)res << "\n";
 }
 
 void cpu_ld_hldec_a(processor &cpu)
@@ -237,5 +240,28 @@ void cpu_inc_c(processor &cpu)
 void cpu_ld_hl_a(processor &cpu)
 {
 	mmu_absolute_write(cpu.mmu, cpu.r.HL, cpu.r.A);
+	cpu.r.PC += 0x1;
+}
+
+void cpu_ldh_a8_a(processor &cpu)
+{
+	uint8_t val = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
+	mmu_absolute_write(cpu.mmu, (0xFF00 + val), cpu.r.A);
+	cpu.r.PC += 0x2;
+}
+
+void cpu_ld_de_d16(processor &cpu)
+{
+	uint8_t b1, b2;
+	b1 = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
+	b2 = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x2);
+	uint16_t res = b1 | (b2 << 8);
+	cpu.r.DE = res;
+	cpu.r.PC += 0x3;
+}
+
+void cpu_ld_a_de(processor &cpu)
+{
+	cpu.r.A = mmu_absolute_read(cpu.mmu, cpu.r.DE);
 	cpu.r.PC += 0x1;
 }
