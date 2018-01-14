@@ -9,6 +9,7 @@ processor cpu_create(string rom_fp)
 
 	//Setup registers.
 	cpu.r.A = 0x0;
+	cpu.r.C = 0x0;
 	cpu.r.F = 0x0;
 	cpu.r.SP = 0x0;
 	cpu.r.PC = 0x0;
@@ -74,6 +75,20 @@ instruction cpu_execute_inst(processor &cpu, const uint8_t &i)
 			cpu_jpnz_r8(cpu);
 			break;
 		break;
+		case 0x0E:
+			inst.disassembly = "LD C,d8";
+			cpu_ld_c_d8(cpu);
+			break;
+		break;
+		case 0x3E:
+			inst.disassembly = "LD A,d8";
+			cpu_ld_a_d8(cpu);
+			break;
+		break;
+		case 0xE2:
+			inst.disassembly = "LD C,A";
+			cpu_ld_c_a(cpu);
+			break;
 		default:
 			inst.disassembly = "UNKNOWN";
 			cout << "Hit unknown opcode 0x" << hex << (int)i;
@@ -90,11 +105,12 @@ instruction cpu_execute_inst(processor &cpu, const uint8_t &i)
 void cpu_dump(const processor &cpu)
 {
 	cout << "\n---- BEGIN CPU STACK TRACE ----\n\n";
-	cout << "Register A: " << hex << (int)cpu.r.A << "\n";
+	cout << "Register A: 0x" << hex << (int)cpu.r.A << "\n";
+	cout << "Register C: 0x" << hex << (int)cpu.r.C << "\n";
 
-	cout << "Register SP: " << hex << (int)cpu.r.SP << "\n";
-	cout << "Register PC: " << hex << (int)cpu.r.PC << "\n";
-	cout << "Register HL: " << hex << (int)cpu.r.HL << "\n";
+	cout << "Register SP: 0x" << hex << (int)cpu.r.SP << "\n";
+	cout << "Register PC: 0x" << hex << (int)cpu.r.PC << "\n";
+	cout << "Register HL: 0x" << hex << (int)cpu.r.HL << "\n";
 
 	cout << "\n---- END CPU STACK TRACE ----\n\n";
 }
@@ -182,4 +198,22 @@ void cpu_jpnz_r8(processor &cpu)
 		cpu.r.PC = (cpu.r.PC + 0x2) + ra;
 	else
 		cpu.r.PC += 0x2;
+}
+
+void cpu_ld_c_d8(processor &cpu)
+{
+	cpu.r.C = cpu.bios_rom[cpu.r.PC + 0x1];
+	cpu.r.PC += 0x2;
+}
+
+void cpu_ld_a_d8(processor &cpu)
+{
+	cpu.r.A = cpu.bios_rom[cpu.r.PC + 0x1];
+	cpu.r.PC += 0x2;
+}
+
+void cpu_ld_c_a(processor &cpu)
+{
+	mmu_absolute_write(cpu.mmu, (0xff00 + cpu.r.C), cpu.r.A);
+	cpu.r.PC += 1;
 }
