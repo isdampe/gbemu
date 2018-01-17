@@ -9,12 +9,16 @@ processor cpu_create(string rom_fp)
 
 	//Setup registers.
 	cpu.r.A = 0x0;
-	cpu.r.C = 0x0;
 	cpu.r.F = 0x0;
-	cpu.r.DE = 0x0;
+	cpu.r.B = 0x0;
+	cpu.r.C = 0x0;
+	cpu.r.D = 0x0;
+	cpu.r.E = 0x0;
+	cpu.r.H = 0x0;
+	cpu.r.L = 0x0;
+
 	cpu.r.SP = 0x0;
 	cpu.r.PC = 0x0;
-	cpu.r.HL = 0x0;
 
 	//Setup memory.
 	cpu.mmu = mmu_create();
@@ -120,6 +124,20 @@ instruction cpu_execute_inst(processor &cpu, const uint8_t &i)
 			cpu_call_nz_a16(cpu);
 			break;
 		break;
+		case 0x4F:
+			inst.disassembly = "LD C,A";
+			cpu_ld_c_ra(cpu);
+			break;
+		case 0x06:
+			inst.disassembly = "LD B,d8";
+			cpu_ld_b_d8(cpu);
+			break;
+		break;
+		case 0xC5:
+			inst.disassembly = "PUSH BC";
+			cpu_push_bc(cpu);
+			break;
+		break;
 		default:
 			inst.disassembly = "UNKNOWN";
 			cout << "Hit unknown opcode 0x" << hex << (int)i;
@@ -128,7 +146,7 @@ instruction cpu_execute_inst(processor &cpu, const uint8_t &i)
 			exit(1);
 	}
 
-	cout << inst.disassembly << endl;
+	cout << "0x" << hex << (int)i << ": " << inst.disassembly << endl;
 
 	return inst;
 }
@@ -137,20 +155,41 @@ void cpu_dump(const processor &cpu)
 {
 	cout << "\n---- BEGIN CPU STACK TRACE ----\n\n";
 	cout << "Register A: 0x" << hex << (int)cpu.r.A << "\n";
+	cout << "Register F: 0x" << hex << (int)cpu.r.F << "\n";
+	cout << "Register B: 0x" << hex << (int)cpu.r.B << "\n";
 	cout << "Register C: 0x" << hex << (int)cpu.r.C << "\n";
+	cout << "Register D: 0x" << hex << (int)cpu.r.D << "\n";
+	cout << "Register E: 0x" << hex << (int)cpu.r.E << "\n";
+	cout << "Register H: 0x" << hex << (int)cpu.r.H << "\n";
+	cout << "Register L: 0x" << hex << (int)cpu.r.L << "\n";
 
-	cout << "Register DE: 0x" << hex << (int)cpu.r.DE << "\n";
+	cout << "Register AF: 0x" << hex << (int)cpu_reg_read_16b(cpu.r.A, cpu.r.F) << "\n";
+	cout << "Register BC: 0x" << hex << (int)cpu_reg_read_16b(cpu.r.B, cpu.r.C) << "\n";
+	cout << "Register DE: 0x" << hex << (int)cpu_reg_read_16b(cpu.r.D, cpu.r.E) << "\n";
+	cout << "Register HL: 0x" << hex << (int)cpu_reg_read_16b(cpu.r.H, cpu.r.L) << "\n";
+
 	cout << "Register SP: 0x" << hex << (int)cpu.r.SP << "\n";
 	cout << "Register PC: 0x" << hex << (int)cpu.r.PC << "\n";
-	cout << "Register HL: 0x" << hex << (int)cpu.r.HL << "\n";
 
 	cout << "\n---- END CPU STACK TRACE ----\n\n";
 }
 
-void cpu_stack_push(processor &cpu, const uint16_t return_addr)
+void cpu_stack_push(processor &cpu, const uint16_t value)
 {
 	cpu.r.SP -= 0x2;
-	mmu_absolute_write(cpu.mmu, cpu.r.SP, return_addr);
+	mmu_absolute_write(cpu.mmu, cpu.r.SP, value);
+}
+
+void cpu_reg_write_16b(uint8_t &reg_A, uint8_t &reg_B, const uint16_t value)
+{
+	uint8_t high = (value >> 8);
+	uint8_t low = (value & 0xFF);
+	reg_A = high; reg_B = low;
+}
+
+uint16_t cpu_reg_read_16b(const uint8_t &reg_A, const uint8_t &reg_B)
+{
+	return reg_B | (reg_A << 8);
 }
 
 void cpu_ld_sp_d16(processor &cpu)
@@ -170,14 +209,15 @@ void cpu_xor_a(processor &cpu)
 void cpu_ld_hl_d16(processor &cpu)
 {
 	uint16_t res = mmu_absolute_read_u16(cpu.mmu, cpu.r.PC + 0x1);
-	cpu.r.HL = res;
+	cpu_reg_write_16b(cpu.r.H, cpu.r.L, res);
 	cpu.r.PC += 0x3;
 }
 
 void cpu_ld_hldec_a(processor &cpu)
 {
-	mmu_absolute_write(cpu.mmu, cpu.r.HL, cpu.r.A);
-	cpu.r.HL--;
+	uint16_t addr = cpu_reg_read_16b(cpu.r.H, cpu.r.L);
+	mmu_absolute_write(cpu.mmu, addr, cpu.r.A);
+	cpu_reg_write_16b(cpu.r.H, cpu.r.L, (addr -1));
 	cpu.r.PC += 0x1;
 }
 
@@ -189,7 +229,7 @@ void cpu_prefix_cb(processor &cpu)
 	{
 		case 0x7C:
 			//Check most significant bit.
-			hb = cpu.r.HL >> 8;
+			hb = cpu_reg_read_16b(cpu.r.H, cpu.r.L) >> 8;
 			msb = 1 << (8 -1);
 			if (hb & msb)
 				cpu.r.F = 0x1; //Set F register cleared.
@@ -197,7 +237,7 @@ void cpu_prefix_cb(processor &cpu)
 				cpu.r.F = 0x0; //Set F register active.
 		break;
 		default:
-			cerr << "Hit unknown Prefix CB in cpu_prefix_cb, " << hex << cb << "\n";
+			cerr << "Hit unknown Prefix CB in cpu_prefix_cb, 0x" << hex << (int)cb << "\n";
 			cpu_dump(cpu);
 			exit(1);
 		break;
@@ -215,16 +255,22 @@ void cpu_jpnz_r8(processor &cpu)
 		cpu.r.PC += 0x2;
 }
 
-void cpu_ld_c_d8(processor &cpu)
-{
-	cpu.r.C = cpu.bios_rom[cpu.r.PC + 0x1];
-	cpu.r.PC += 0x2;
-}
-
 void cpu_ld_a_d8(processor &cpu)
 {
 	uint8_t val = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
 	cpu.r.A = val;
+	cpu.r.PC += 0x2;
+}
+
+void cpu_ld_b_d8(processor &cpu)
+{
+	cpu.r.B = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
+	cpu.r.PC += 0x2;
+}
+
+void cpu_ld_c_d8(processor &cpu)
+{
+	cpu.r.C = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
 	cpu.r.PC += 0x2;
 }
 
@@ -242,7 +288,8 @@ void cpu_inc_c(processor &cpu)
 
 void cpu_ld_hl_a(processor &cpu)
 {
-	mmu_absolute_write(cpu.mmu, cpu.r.HL, cpu.r.A);
+	uint16_t addr = cpu_reg_read_16b(cpu.r.H, cpu.r.L);
+	mmu_absolute_write(cpu.mmu, addr, cpu.r.A);
 	cpu.r.PC += 0x1;
 }
 
@@ -256,13 +303,14 @@ void cpu_ldh_a8_a(processor &cpu)
 void cpu_ld_de_d16(processor &cpu)
 {
 	uint16_t res = mmu_absolute_read_u16(cpu.mmu, cpu.r.PC + 0x1);
-	cpu.r.DE = res;
+	cpu_reg_write_16b(cpu.r.D, cpu.r.E, res);
 	cpu.r.PC += 0x3;
 }
 
 void cpu_ld_a_de(processor &cpu)
 {
-	cpu.r.A = mmu_absolute_read(cpu.mmu, cpu.r.DE);
+	uint16_t addr = cpu_reg_read_16b(cpu.r.D, cpu.r.E);
+	cpu.r.A = mmu_absolute_read(cpu.mmu, addr);
 	cpu.r.PC += 0x1;
 }
 
@@ -271,4 +319,17 @@ void cpu_call_nz_a16(processor &cpu)
 	uint16_t res = mmu_absolute_read_u16(cpu.mmu, cpu.r.PC + 0x1);
 	cpu_stack_push(cpu, cpu.r.PC + 0x1);
 	cpu.r.PC = res;
+}
+
+void cpu_ld_c_ra(processor &cpu)
+{
+	cpu.r.C = cpu.r.A;
+	cpu.r.PC += 0x1;
+}
+
+void cpu_push_bc(processor &cpu)
+{
+	uint16_t res = cpu_reg_read_16b(cpu.r.B, cpu.r.C);
+	cpu_stack_push(cpu, res);
+	cpu.r.PC += 0x1;
 }

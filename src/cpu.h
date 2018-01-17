@@ -15,12 +15,15 @@ struct instruction
 struct registers
 {
 	uint8_t A;
-	uint8_t C;
 	uint8_t F;
-	uint16_t DE;
+	uint8_t B;
+	uint8_t C;
+	uint8_t D;
+	uint8_t E;
+	uint8_t H;
+	uint8_t L;
 	uint16_t SP;
 	uint16_t PC;
-	uint16_t HL;
 };
 
 struct processor
@@ -51,7 +54,9 @@ processor cpu_create(string rom_fp);
 void cpu_main(processor &cpu);
 instruction cpu_execute_inst(processor &cpu, const uint8_t &i);
 void cpu_dump(const processor &cpu);
-void cpu_stack_push(processor &cpu, const uint16_t return_addr);
+void cpu_stack_push(processor &cpu, const uint16_t value);
+void cpu_reg_write_16b(uint8_t &reg_A, uint8_t &reg_B, const uint16_t value);
+uint16_t cpu_reg_read_16b(const uint8_t &reg_A, const uint8_t &reg_B);
 
 void cpu_ld_sp_d16(processor &cpu);
 void cpu_xor_a(processor &cpu);
@@ -59,8 +64,9 @@ void cpu_ld_hl_d16(processor &cpu);
 void cpu_ld_hldec_a(processor &cpu);
 void cpu_prefix_cb(processor &cpu);
 void cpu_jpnz_r8(processor &cpu);
-void cpu_ld_c_d8(processor &cpu);
 void cpu_ld_a_d8(processor &cpu);
+void cpu_ld_b_d8(processor &cpu);
+void cpu_ld_c_d8(processor &cpu);
 void cpu_ld_c_a(processor &cpu);
 void cpu_inc_c(processor &cpu);
 void cpu_ld_hl_a(processor &cpu);
@@ -68,3 +74,5 @@ void cpu_ldh_a8_a(processor &cpu);
 void cpu_ld_de_d16(processor &cpu);
 void cpu_ld_a_de(processor &cpu);
 void cpu_call_nz_a16(processor &cpu);
+void cpu_ld_c_ra(processor &cpu);
+void cpu_push_bc(processor &cpu);

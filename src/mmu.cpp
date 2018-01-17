@@ -41,8 +41,8 @@ uint8_t mmu_absolute_read(memory &mmu, const uint16_t addr)
 uint16_t mmu_absolute_read_u16(memory &mmu, const uint16_t addr)
 {
 	uint8_t b1, b2;
-	b1 = mmu_absolute_read(cpu.mmu, addr);
-	b2 = mmu_absolute_read(cpu.mmu, addr + 0x1);
+	b1 = mmu_absolute_read(mmu, addr);
+	b2 = mmu_absolute_read(mmu, addr + 0x1);
 	uint16_t res = b1 | (b2 << 8);
 	return res;
 }
