@@ -192,6 +192,19 @@ uint16_t cpu_reg_read_16b(const uint8_t &reg_A, const uint8_t &reg_B)
 	return reg_B | (reg_A << 8);
 }
 
+void cpu_set_flag(processor &cpu, const uint8_t flag, const uint8_t on_off)
+{
+	if (on_off == 1)
+		cpu.r.F |= flag;
+	else
+		cpu.r.F &= ~(flag);
+}
+
+uint8_t cpu_get_flag(processor &cpu, const uint8_t flag)
+{
+	return (cpu.r.F & flag) ? 1 : 0;
+}
+
 void cpu_ld_sp_d16(processor &cpu)
 {
 	uint16_t res = mmu_absolute_read_u16(cpu.mmu, cpu.r.PC + 0x1);
@@ -224,7 +237,7 @@ void cpu_ld_hldec_a(processor &cpu)
 void cpu_prefix_cb(processor &cpu)
 {
 	uint8_t cb = mmu_absolute_read(cpu.mmu, cpu.r.PC + 0x1);
-	uint8_t hb, msb;
+	uint8_t hb, msb, fc;
 	switch(cb)
 	{
 		case 0x7C:
@@ -235,6 +248,22 @@ void cpu_prefix_cb(processor &cpu)
 				cpu.r.F = 0x1; //Set F register cleared.
 			else
 				cpu.r.F = 0x0; //Set F register active.
+		break;
+		case 0x11:
+			fc = cpu.r.C > 0x7F;
+			if (((cpu.r.C << 1) & 0xFF) | cpu_get_flag(cpu, FLAG_CARRY))
+				cpu.r.C = 1;
+			else
+				cpu.r.C = 0;
+			cpu_set_flag(cpu, FLAG_CARRY, fc);
+			cpu_set_flag(cpu, FLAG_HALF_CARRY, 0);
+			cpu_set_flag(cpu, FLAG_ZERO, (cpu.r.C == 0 ? 0 : 1));
+
+		/**var newFCarry = (parentObj.registerC > 0x7F);
+		parentObj.registerC = ((parentObj.registerC << 1) & 0xFF) | ((parentObj.FCarry) ? 1 : 0);
+		parentObj.FCarry = newFCarry;
+		parentObj.FHalfCarry = parentObj.FSubtract = false;
+		parentObj.FZero = (parentObj.registerC == 0);*/
 		break;
 		default:
 			cerr << "Hit unknown Prefix CB in cpu_prefix_cb, 0x" << hex << (int)cb << "\n";

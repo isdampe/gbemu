@@ -5,6 +5,10 @@
 
 using namespace std;
 
+#define FLAG_ZERO 0x40
+#define FLAG_CARRY 0x8
+#define FLAG_HALF_CARRY 0x10
+
 struct instruction
 {
 	uint8_t inst;
@@ -57,6 +61,8 @@ void cpu_dump(const processor &cpu);
 void cpu_stack_push(processor &cpu, const uint16_t value);
 void cpu_reg_write_16b(uint8_t &reg_A, uint8_t &reg_B, const uint16_t value);
 uint16_t cpu_reg_read_16b(const uint8_t &reg_A, const uint8_t &reg_B);
+void cpu_set_flag(processor &cpu, const uint8_t flag, const uint8_t on_off);
+uint8_t cpu_get_flag(processor &cpu, const uint8_t flag);
 
 void cpu_ld_sp_d16(processor &cpu);
 void cpu_xor_a(processor &cpu);
