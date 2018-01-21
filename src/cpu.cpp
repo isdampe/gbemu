@@ -138,6 +138,36 @@ instruction cpu_execute_inst(processor &cpu, const uint8_t &i)
 			cpu_push_bc(cpu);
 			break;
 		break;
+		case 0x17:
+			inst.disassembly = "RLA";
+			cpu_rl_a(cpu);
+			break;
+		break;
+		case 0xC1:
+			inst.disassembly = "POP BC";
+			cpu_pop_bc(cpu);
+			break;
+		break;
+		case 0x05:
+			inst.disassembly = "DEC B";
+			cpu_dec_b(cpu);
+			break;
+		break;
+		case 0x22:
+			inst.disassembly = "LD (HL+),A";
+			cpu_ld_hlinc_a(cpu);
+			break;
+		break;
+		case 0x23:
+			inst.disassembly = "INC HL";
+			cpu_inc_hl(cpu);
+			break;
+		break;
+		case 0xC9:
+			inst.disassembly = "RET";
+			cpu_ret(cpu);
+			break;
+		break;
 		default:
 			inst.disassembly = "UNKNOWN";
 			cout << "Hit unknown opcode 0x" << hex << (int)i;
@@ -178,6 +208,11 @@ void cpu_stack_push(processor &cpu, const uint16_t value)
 {
 	cpu.r.SP -= 0x2;
 	mmu_absolute_write(cpu.mmu, cpu.r.SP, value);
+}
+
+void cpu_stack_pop(processor &cpu)
+{
+	cpu.r.SP += 0x2;
 }
 
 void cpu_reg_write_16b(uint8_t &reg_A, uint8_t &reg_B, const uint16_t value)
@@ -361,4 +396,53 @@ void cpu_push_bc(processor &cpu)
 	uint16_t res = cpu_reg_read_16b(cpu.r.B, cpu.r.C);
 	cpu_stack_push(cpu, res);
 	cpu.r.PC += 0x1;
+}
+
+void cpu_rl_a(processor &cpu)
+{
+	uint8_t fc;
+	fc = cpu.r.A > 0x7F;
+	if (((cpu.r.A << 1) & 0xFF) | cpu_get_flag(cpu, FLAG_CARRY))
+		cpu.r.A = 1;
+	else
+		cpu.r.A = 0;
+	cpu_set_flag(cpu, FLAG_CARRY, fc);
+	cpu_set_flag(cpu, FLAG_HALF_CARRY, 0);
+	cpu_set_flag(cpu, FLAG_ZERO, (cpu.r.A == 0 ? 0 : 1));
+	cpu.r.PC += 0x1;
+}
+
+void cpu_pop_bc(processor &cpu)
+{
+	uint16_t res = mmu_absolute_read_u16(cpu.mmu, cpu.r.SP);
+	cpu_reg_write_16b(cpu.r.C, cpu.r.B, res);
+	cpu_stack_pop(cpu);
+	cpu.r.PC += 0x1;
+}
+
+void cpu_dec_b(processor &cpu)
+{
+	cpu.r.B -= 0x1;
+	cpu.r.PC += 0x1;
+}
+
+void cpu_ld_hlinc_a(processor &cpu)
+{
+	uint16_t addr = cpu_reg_read_16b(cpu.r.H, cpu.r.L);
+	mmu_absolute_write(cpu.mmu, addr, cpu.r.A);
+	cpu_reg_write_16b(cpu.r.H, cpu.r.L, addr + 0x1);
+	cpu.r.PC += 0x1;
+}
+
+void cpu_inc_hl(processor &cpu)
+{
+	uint16_t val = cpu_reg_read_16b(cpu.r.H, cpu.r.L);
+	cpu_reg_write_16b(cpu.r.H, cpu.r.L, val + 0x1);
+	cpu.r.PC += 0x1;
+}
+
+void cpu_ret(processor &cpu)
+{
+	cpu.r.PC = mmu_absolute_read_u16(cpu.mmu, cpu.r.SP);
+	cpu_stack_pop(cpu);
 }
