@@ -8,12 +8,13 @@ using namespace std;
 #define FLAG_ZERO 0x40
 #define FLAG_CARRY 0x8
 #define FLAG_HALF_CARRY 0x10
+#define FLAG_NEGATIVE 0x20
 
 struct instruction
 {
 	uint8_t inst;
 	uint8_t op_size;
-	string disassembly;
+	string disassembly;ƒ
 };
 
 struct registers
@@ -89,3 +90,5 @@ void cpu_dec_b(processor &cpu);
 void cpu_ld_hlinc_a(processor &cpu);
 void cpu_inc_hl(processor &cpu);
 void cpu_ret(processor &cpu);
+void cpu_sub_l(processor &cpu);
+void cpu_nop(processor &cpu);

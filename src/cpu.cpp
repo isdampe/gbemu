@@ -168,6 +168,16 @@ instruction cpu_execute_inst(processor &cpu, const uint8_t &i)
 			cpu_ret(cpu);
 			break;
 		break;
+		case 0x95:
+			inst.disassembly = "SUB L";
+			cpu_sub_l(cpu);
+			break;
+		break;
+		case 0x00:
+			inst.disassembly = "NOP";
+			cpu_nop(cpu);
+			break;
+		break;
 		default:
 			inst.disassembly = "UNKNOWN";
 			cout << "Hit unknown opcode 0x" << hex << (int)i;
@@ -381,7 +391,7 @@ void cpu_ld_a_de(processor &cpu)
 void cpu_call_nz_a16(processor &cpu)
 {
 	uint16_t res = mmu_absolute_read_u16(cpu.mmu, cpu.r.PC + 0x1);
-	cpu_stack_push(cpu, cpu.r.PC + 0x1);
+	cpu_stack_push(cpu, cpu.r.PC + 0x2);
 	cpu.r.PC = res;
 }
 
@@ -445,4 +455,19 @@ void cpu_ret(processor &cpu)
 {
 	cpu.r.PC = mmu_absolute_read_u16(cpu.mmu, cpu.r.SP);
 	cpu_stack_pop(cpu);
+}
+
+void cpu_sub_l(processor &cpu)
+{
+	cpu_set_flag(cpu, FLAG_NEGATIVE, 1);
+	cpu_set_flag(cpu, FLAG_CARRY, ((cpu.r.L > cpu.r.A) ? 1 : 0));
+	cpu_set_flag(cpu, FLAG_HALF_CARRY, ((cpu.r.L & 0x0F) > (cpu.r.A & 0x0F) ? 1 : 0));
+	cpu.r.A -= cpu.r.L;
+	cpu_set_flag(cpu, FLAG_ZERO, (cpu.r.A > 0) ? 0 : 1);
+	cpu.r.PC += 0x1;
+}
+
+void cpu_nop(processor &cpu)
+{
+	cpu.r.PC += 0x1;
 }
